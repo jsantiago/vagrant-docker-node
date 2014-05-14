@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DOCKER_DIR="$SCRIPT_DIR/docker"
+
+clean() {
+    vagrant ssh -c '/vagrant/dockerw clean'
+    rm -rf $SCRIPT_DIR/bower_components
+    rm -rf $SCRIPT_DIR/node_modules
+}
+
+build() {
+    cd $DOCKER_DIR
+    vagrant docker-run -- bower install --allow-root
+    vagrant docker-run -- npm install
+    vagrant docker-run -- grunt
+}
+
+run() {
+    echo "TODO - run"
+}
+
+ssh() {
+    vagrant ssh -c '/vagrant/dockerw run'
+    exit
+}
+
+status() {
+    cd $DOCKER_DIR && vagrant status
+}
+
+start() {
+    cd $DOCKER_DIR
+    vagrant up --provider=docker
+}
+
+restart() {
+    clean
+    cd $DOCKER_DIR && vagrant destroy
+    start
+}
+
+stop() {
+    cd $DOCKER_DIR && vagrant halt
+    cd $SCRIPT_DIR && vagrant halt
+}
+
+destroy() {
+    cd $DOCKER_DIR && vagrant destroy
+    cd $SCRIPT_DIR && vagrant destroy
+}
+
+usage() {
+    echo "Usage: $0 [ clean | build | run | ssh | status | start | restart | stop | destroy ]"
+}
+
+if [[ $# == 0 ]]; then
+    usage
+    exit 1
+fi
+
+while [[ -n "$1" ]]; do
+    case $1 in
+        clean ) clean
+            ;;
+        build ) build
+            ;;
+        run ) run
+            ;;
+        ssh ) ssh
+            ;;
+        status ) status
+            ;;
+        start ) start
+            ;;
+        restart ) restart
+            ;;
+        stop ) stop
+            ;;
+        destroy ) destroy
+            ;;
+        * ) usage
+            exit 1
+            ;;
+    esac
+    shift
+done

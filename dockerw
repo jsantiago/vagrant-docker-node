@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+REPO="dockerfile/nodejs"
+
+# Uncomment to set default mount points
+HOST_MOUNT="/vagrant"
+CONTAINER_MOUNT="/data"
+
+# Uncomment to set default host:container port
+# HOST_PORT="80"
+# CONTAINER_PORT="8080"
+
+setup() {
+    if [[ -z "$MOUNT" && -n "$HOST_MOUNT" && -n "$CONTAINER_MOUNT" ]]; then
+        MOUNT="-v $HOST_MOUNT:$CONTAINER_MOUNT"
+    fi
+
+    if [[ -z "$PORT" && -n "$HOST_PORT" && -n "$CONTAINER_PORT" ]]; then
+        PORT="-p $HOST_PORT:$CONTAINER_PORT"
+    fi
+}
+
+run() {
+    setup
+    CONTAINER=$(docker images | grep -m 1 '<none>' | awk '{print $3}')
+    docker run --rm $PORT $MOUNT -i -t $CONTAINER /bin/bash
+}
+
+clean() {
+    # Remove stopped containers
+    CONTAINERS=$(docker ps  -a | grep 'Exit' | awk '{print $1}')
+    if [[ -n $CONTAINERS ]]; then
+        docker rm $CONTAINERS
+    fi
+
+    # Remove untagged images
+    IMAGES=$(docker images | grep "^<none>" | awk '{print $3}')
+    if [[ -n $IMAGES ]]; then
+        docker rmi $IMAGES
+    fi
+}
+
+remove() {
+    IMAGE=$(docker images | grep $REPO | awk '{print $3}')
+    if [[ -n $IMAGE ]]; then
+        docker rmi $IMAGE
+    fi
+}
+
+usage() {
+    echo "Usage: $0 [ clean | remove | [-v hostMount:containerMount] [-p hostPort:containerPort] run ]"
+}
+
+if [[ $# == 0 ]];then
+    usage
+    exit 1
+fi
+
+MOUNT=""
+PORT=""
+while [[ -n "$1" ]]; do
+    case $1 in
+        -v ) shift
+            MOUNT="-v $1"
+            ;;
+        -p ) shift
+            PORT="-p $1"
+            ;;
+        clean ) clean
+            ;;
+        remove ) remove
+            ;;
+        run ) run
+            ;;
+        * ) usage
+            ;;
+    esac
+    shift
+done

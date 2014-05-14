@@ -1,0 +1,9 @@
+{
+    "name": "vagrant-docker-node",
+    "version": "0.1.0",
+    "devDependencies": {
+        "bootstrap": "3.1.x",
+        "jquery": "2.1.x",
+        "react": "0.8.x"
+    }
+}
